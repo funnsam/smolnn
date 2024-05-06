@@ -37,12 +37,19 @@ impl<const IN: usize, const OUT: usize> Layer<IN, OUT> {
         &self.weights * i + &self.biases
     }
 
-    pub fn back_prop(&mut self, i: &Vector<IN>, act_der: Vector<OUT>, cost_der: &Vector<OUT>, rate: f32) -> Vector<IN> {
+    pub fn back_prop(&mut self, i: &Vector<IN>, act_der: Vector<OUT>, cost_der: &Vector<OUT>, prev_act_der: &Vector<IN>, rate: f32) -> Vector<IN> {
     // pub fn back_prop(&mut self, i: &Vector<IN>, act_der: Vector<OUT>, cost_der: f32, rate: f32) {
-        let dc_db = act_der * cost_der;
+        let dc_db = act_der.clone() * cost_der;
         let dc_dw = (&dc_db) * &i.transpose();
 
         self.biases = self.biases.clone() - &(dc_db * rate);
         self.weights = self.weights.clone() - &(dc_dw * rate);
+
+        // LIGHT:
+        //   p
+        // ( Σ  c'σ' w_i^1) σ' i_0
+        //  i=1
+        //
+        (&(act_der * cost_der).transpose() * &self.weights).transpose() * prev_act_der * i
     }
 }

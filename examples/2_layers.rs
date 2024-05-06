@@ -25,7 +25,7 @@ fn main() {
         let mut r = Vec::new();
         for (_, x) in expected.iter() {
             let r0 = activations::relu(l0.evaluate(x));
-            let rf = activations::softmax(lf.evaluate(&r0));
+            let rf = activations::linear(lf.evaluate(&r0));
             r.push((r0, rf));
         }
 
@@ -34,11 +34,11 @@ fn main() {
             c += costs::mse(rf.clone(), e);
             let cost_der = costs::squared_error_derivative(rf.clone(), e);
 
-            let actv_der = activations::relu_derivative(r0.clone());
-            let cost_der = l0.back_prop(x, actv_der, &cost_der, rate);
+            let actv_der_0 = activations::relu_derivative(r0.clone());
+            let actv_der_f = activations::linear_derivative(rf);
 
-            let actv_der = costs::squared_error_derivative(rf, e);
-            lf.back_prop(&r0, actv_der, &cost_der, rate);
+            let cost_der = lf.back_prop(&r0, actv_der_f.clone(), &cost_der, &actv_der_0, rate);
+            l0.back_prop(x, actv_der_0, &cost_der, &actv_der_f, rate);
         }
 
         println!("{}", c / SAMPLES as f32);
@@ -56,7 +56,7 @@ fn main() {
 
 fn f(x: f32, y: f32) -> Vector<2> {
     vector!(2 [
-        x.exp(),
-        x.exp() + y.sin(),
+        (x * 6.0).min(0.0),
+        (y * 9.0).min(0.0),
     ])
 }
