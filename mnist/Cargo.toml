@@ -1,0 +1,8 @@
+[package]
+name = "mnist"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+smolmatrix = "0.1.3"
+smolnn = { version = "0.1.0", path = ".." }

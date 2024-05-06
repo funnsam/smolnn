@@ -1,7 +1,15 @@
+[workspace]
+members = ["mnist"]
+
 [package]
 name = "smolnn"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+alea = { version = "0.2.2", optional = true }
 smolmatrix = "0.1.3"
+
+[features]
+default = ["alea"]
+alea = ["dep:alea"]
