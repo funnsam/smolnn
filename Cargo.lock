@@ -12,20 +12,24 @@ checksum = "b5906476585661c802d50736a92abb1fc6159648d3a9983a26c9aab33bb19346"
 name = "mnist"
 version = "0.1.0"
 dependencies = [
- "smolmatrix",
+ "smolmatrix 0.1.4",
  "smolnn",
 ]
 
 [[package]]
 name = "smolmatrix"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6783214a39dece74930e70eb5c307b7af1c3afbe2d43f66c822ed038ff92a918"
+checksum = "2b51ae9cbc919b56f2f1c11f6ce53f3dbfaec74f386e43d53b91ddf0baeb59bc"
+
+[[package]]
+name = "smolmatrix"
+version = "0.1.5"
 
 [[package]]
 name = "smolnn"
 version = "0.1.0"
 dependencies = [
  "alea",
- "smolmatrix",
+ "smolmatrix 0.1.5",
 ]

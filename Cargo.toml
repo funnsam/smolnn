@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 alea = { version = "0.2.2", optional = true }
-smolmatrix = "0.1.3"
+smolmatrix = "0.1.5"
 
 [features]
 default = ["alea"]

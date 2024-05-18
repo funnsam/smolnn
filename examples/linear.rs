@@ -54,6 +54,7 @@ fn main() {
         println!("{}", l0.biases);
     }
 
+    train_w_opt(&l0, &expected, optimizers::adam(rate, 0.9, 0.999));
     train_w_opt(&l0, &expected, optimizers::sgd_momentum(rate, 0.9));
     train_w_opt(&l0, &expected, optimizers::sgd(rate));
 }
