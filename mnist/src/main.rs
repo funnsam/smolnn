@@ -3,6 +3,8 @@ use smolnn::*;
 
 use core::sync::atomic::*;
 
+mod model;
+
 // training params
 const BATCH_SIZE: usize = 25;
 
@@ -14,20 +16,14 @@ mod reader;
 fn main() {
     BAR_LENGTH.store(term_size::dimensions().unwrap().0 - 11, Ordering::Relaxed);
 
-    let (images, labels) = reader::read_data("t10k", Some(1000)).unwrap();
-
-    let hl1 = Layer::<784, 256>::new_randomized();
-    let hl2 = Layer::<256, 256>::new_randomized();
-    let out = Layer::<256, 10>::new_randomized();
+    let (images, labels) = reader::read_data("t10k", None).unwrap();
+    let model = model::Model::new();
 
     for (i, l) in images.iter().zip(labels.iter()) {
         visualize(i);
         println!("Expected: {}", l);
 
-        let l1 = activations::tanh(hl1.evaluate(i));
-        let l2 = activations::tanh(hl2.evaluate(&l1));
-        let f = activations::softmax(out.evaluate(&l2));
-
+        let f = model.evaluate(i);
         let p = f
             .inner
             .iter()
@@ -45,17 +41,17 @@ fn main() {
     }
 }
 
-fn visualize_first_ten(t: &str) {
-    let (images, labels) = reader::read_data(t, Some(10)).unwrap();
+// fn visualize_first_ten(t: &str) {
+//     let (images, labels) = reader::read_data(t, Some(10)).unwrap();
 
-    for i in 0..images.len() {
-        println!("Correct: {}", labels[i]);
-        visualize(&images[i]);
-        std::thread::sleep_ms(1000);
-    }
+//     for i in 0..images.len() {
+//         println!("Correct: {}", labels[i]);
+//         visualize(&images[i]);
+//         std::thread::sleep_ms(1000);
+//     }
 
-    println!("First 10 of {t} end");
-}
+//     println!("First 10 of {t} end");
+// }
 
 fn visualize(fb: &Vector<784>) {
     for yhalf in 0..28 / 2 {

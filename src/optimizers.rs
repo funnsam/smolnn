@@ -5,7 +5,7 @@ pub trait Optimizer<const I: usize, const O: usize> {
     fn update_biases(&mut self, p: Vector<O>, g: Vector<O>) -> Vector<O>;
 }
 
-struct Sgd(f32);
+pub struct Sgd(f32);
 impl<const I: usize, const O: usize> Optimizer<I, O> for Sgd {
     fn update_weights(&mut self, p: Matrix<I, O>, g: Matrix<I, O>) -> Matrix<I, O> {
         p - &(g * self.0)
@@ -16,11 +16,11 @@ impl<const I: usize, const O: usize> Optimizer<I, O> for Sgd {
     }
 }
 
-pub fn sgd<const I: usize, const O: usize>(learning_rate: f32) -> impl Optimizer<I, O> {
+pub fn sgd<const I: usize, const O: usize>(learning_rate: f32) -> Sgd {
     Sgd(learning_rate)
 }
 
-struct SgdMomentum<const I: usize, const O: usize> {
+pub struct SgdMomentum<const I: usize, const O: usize> {
     alpha: f32,
     beta: f32,
     v_weight: Matrix<I, O>,
@@ -42,7 +42,7 @@ impl<const I: usize, const O: usize> Optimizer<I, O> for SgdMomentum<I, O> {
 pub fn sgd_momentum<const I: usize, const O: usize>(
     learning_rate: f32,
     beta: f32,
-) -> impl Optimizer<I, O> {
+) -> SgdMomentum<I, O> {
     SgdMomentum {
         alpha: learning_rate * (1.0 - beta),
         beta,
@@ -51,7 +51,7 @@ pub fn sgd_momentum<const I: usize, const O: usize>(
     }
 }
 
-struct Adam<const I: usize, const O: usize> {
+pub struct Adam<const I: usize, const O: usize> {
     alpha: f32,
     beta1: f32,
     beta2: f32,
@@ -103,7 +103,7 @@ pub fn adam<const I: usize, const O: usize>(
     learning_rate: f32,
     beta1: f32,
     beta2: f32,
-) -> impl Optimizer<I, O> {
+) -> Adam<I, O> {
     Adam {
         alpha: learning_rate,
         beta1,
