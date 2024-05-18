@@ -17,6 +17,8 @@
     mutable_transmutes
 )]
 
+extern crate alloc;
+
 use optimizers::Optimizer;
 use smolmatrix::*;
 

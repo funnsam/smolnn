@@ -5,6 +5,16 @@ pub trait Optimizer<const I: usize, const O: usize> {
     fn update_biases(&mut self, p: Vector<O>, g: Vector<O>) -> Vector<O>;
 }
 
+impl<const I: usize, const O: usize, Opt: Optimizer<I, O>> Optimizer<I, O> for alloc::boxed::Box<Opt> {
+    fn update_weights(&mut self, p: Matrix<I, O>, g: Matrix<I, O>) -> Matrix<I, O> {
+        (&mut **self).update_weights(p, g)
+    }
+
+    fn update_biases(&mut self, p: Vector<O>, g: Vector<O>) -> Vector<O> {
+        (&mut **self).update_biases(p, g)
+    }
+}
+
 pub struct Sgd(f32);
 impl<const I: usize, const O: usize> Optimizer<I, O> for Sgd {
     fn update_weights(&mut self, p: Matrix<I, O>, g: Matrix<I, O>) -> Matrix<I, O> {

@@ -9,47 +9,49 @@ const OUT: usize = 10;
 const LEARNING_RATE: f32 = 3e-4;
 
 pub struct Model {
-    l0: Layer<IN, L0>,
-    l1: Layer<L0, L1>,
-    l2: Layer<L1, OUT>,
+    l0: Box<Layer<IN, L0>>,
+    l1: Box<Layer<L0, L1>>,
+    l2: Box<Layer<L1, OUT>>,
 
-    l0_opt: optimizers::Adam<IN, L0>,
-    l1_opt: optimizers::Adam<L0, L1>,
-    l2_opt: optimizers::Adam<L1, OUT>,
+    l0_opt: Box<optimizers::Adam<IN, L0>>,
+    l1_opt: Box<optimizers::Adam<L0, L1>>,
+    l2_opt: Box<optimizers::Adam<L1, OUT>>,
 }
 
 impl Model {
     pub fn new() -> Self {
         Self {
-            l0: Layer::new_randomized(),
-            l1: Layer::new_randomized(),
-            l2: Layer::new_randomized(),
+            l0: Box::new(Layer::new_randomized()),
+            l1: Box::new(Layer::new_randomized()),
+            l2: Box::new(Layer::new_randomized()),
 
-            l0_opt: optimizers::adam(LEARNING_RATE, 0.9, 0.999),
-            l1_opt: optimizers::adam(LEARNING_RATE, 0.9, 0.999),
-            l2_opt: optimizers::adam(LEARNING_RATE, 0.9, 0.999),
+            l0_opt: Box::new(optimizers::adam(LEARNING_RATE, 0.9, 0.999)),
+            l1_opt: Box::new(optimizers::adam(LEARNING_RATE, 0.9, 0.999)),
+            l2_opt: Box::new(optimizers::adam(LEARNING_RATE, 0.9, 0.999)),
         }
     }
 
     pub fn evaluate(&self, i: &Vector<IN>) -> Vector<OUT> {
-        let l0 = activations::tanh(self.l0.evaluate(&i));
+        let l0 = activations::tanh(self.l0.evaluate(i));
         let l1 = activations::tanh(self.l1.evaluate(&l0));
         let l2 = activations::tanh(self.l2.evaluate(&l1));
 
         l2
     }
 
-    pub fn feed(&self, epoch: &mut Epoch, i: &Vector<IN>, t: &Vector<OUT>) {
-        let l0 = activations::tanh(self.l0.evaluate(&i));
+    pub fn feed(&self, epoch: &mut Epoch, i: &Vector<IN>, t: u8) {
+        let t = one_at(t);
+
+        let l0 = activations::tanh(self.l0.evaluate(i));
         let l1 = activations::tanh(self.l1.evaluate(&l0));
         let l2 = activations::tanh(self.l2.evaluate(&l1));
-        epoch.c += costs::mse(l2.clone(), t);
+        epoch.c += costs::mse(l2.clone(), &t);
 
         let cost_der = activations::softmax_cost();
 
         let actv_der_0 = activations::tanh_derivative(l0.clone());
         let actv_der_1 = activations::tanh_derivative(l1.clone());
-        let actv_der_2 = activations::softmax_derivative(l2.clone(), t);
+        let actv_der_2 = activations::softmax_derivative(l2.clone(), &t);
 
         let cost_der = self.l2.back_prop(&mut epoch.l2, &l1, actv_der_2.clone(), &cost_der, &actv_der_1);
         let cost_der = self.l1.back_prop(&mut epoch.l1, &l0, actv_der_1.clone(), &cost_der, &actv_der_0);
@@ -81,4 +83,10 @@ impl Epoch {
             c: 0.0,
         }
     }
+}
+
+fn one_at(id: u8) -> Vector<OUT> {
+    let mut v = Vector::new_zeroed();
+    v[(0, id as usize)] = 1.0;
+    v
 }

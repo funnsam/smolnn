@@ -18,6 +18,7 @@ checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
 name = "mnist"
 version = "0.1.0"
 dependencies = [
+ "alea",
  "smolmatrix",
  "smolnn",
  "term_size",

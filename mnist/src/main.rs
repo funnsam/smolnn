@@ -1,5 +1,4 @@
 use smolmatrix::*;
-use smolnn::*;
 
 use core::sync::atomic::*;
 
@@ -17,7 +16,18 @@ fn main() {
     BAR_LENGTH.store(term_size::dimensions().unwrap().0 - 11, Ordering::Relaxed);
 
     let (images, labels) = reader::read_data("t10k", None).unwrap();
-    let model = model::Model::new();
+    let mut model = model::Model::new();
+
+    for i in 1..=25 {
+        let mut epoch = model::Epoch::new();
+
+        for _ in 0..BATCH_SIZE {
+            let id = alea::u64_in_range(0, images.len() as u64) as usize;
+            model.feed(&mut epoch, &images[id], labels[id]);
+        }
+
+        println!("{i:>5} {}", model.apply(epoch));
+    }
 
     for (i, l) in images.iter().zip(labels.iter()) {
         visualize(i);
