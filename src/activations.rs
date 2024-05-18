@@ -57,12 +57,10 @@ pub fn softmax<const S: usize>(mut v: Vector<S>) -> Vector<S> {
     v
 }
 
-pub fn softmax_derivative<const S: usize>(v: Vector<S>) -> Vector<S> {
-    let mut v = softmax(v);
+pub fn softmax_derivative<const S: usize>(v: Vector<S>, t: &Vector<S>) -> Vector<S> {
+    softmax(v) - t
+}
 
-    for y in 0..S {
-        v[(0, y)] = v[(0, y)] * (1.0 - v[(0, y)]);
-    }
-
-    v
+pub fn softmax_cost<const S: usize>() -> Vector<S> { // HACK: wacky simple solution
+    Vector { inner: [[1.0]; S] }
 }

@@ -5,7 +5,7 @@ const SAMPLES_SQRT: isize = 10;
 const SAMPLES: isize = SAMPLES_SQRT * SAMPLES_SQRT;
 
 fn main() {
-    let learn_rate = 2e-4;
+    let learn_rate = 3e-4;
 
     let mut l0: Layer<2, 16> = Layer::new_randomized();
     let mut lf: Layer<16, 2> = Layer::new_randomized();
@@ -27,7 +27,7 @@ fn main() {
         let mut r = Vec::new();
         for (_, x) in expected.iter() {
             let r0 = activations::relu(l0.evaluate(x));
-            let rf = activations::linear(lf.evaluate(&r0));
+            let rf = activations::softmax(lf.evaluate(&r0));
             r.push((r0, rf));
         }
 
@@ -36,10 +36,16 @@ fn main() {
         let mut bpf = BackPropAcc::new();
         for ((r0, rf), (e, x)) in r.into_iter().zip(expected.iter()) {
             c += costs::mse(rf.clone(), e);
-            let cost_der = costs::squared_error_derivative(rf.clone(), e);
+            // NOTE: normally you use this for the cost:
+            // ```
+            // let cost_der = costs::squared_error_derivative(rf.clone(), e);
+            // ```
+            // , however due to impl details, to calculate the cost derivative of a softmax layer
+            // do this instead
+            let cost_der = activations::softmax_cost();
 
             let actv_der_0 = activations::relu_derivative(r0.clone());
-            let actv_der_f = activations::linear_derivative(rf);
+            let actv_der_f = activations::softmax_derivative(rf, e);
 
             let cost_der = lf.back_prop(&mut bpf, &r0, actv_der_f.clone(), &cost_der, &actv_der_0);
             l0.back_prop(&mut bp0, x, actv_der_0, &cost_der, &actv_der_f);
@@ -62,8 +68,9 @@ fn main() {
 }
 
 fn f(x: f32, y: f32) -> Vector<2> {
-    vector!(2 [
-        (x * 6.0).min(0.0),
-        (y * 9.0).min(0.0),
-    ])
+    if x < y {
+        vector!(2 [1.0, 0.0])
+    } else {
+        vector!(2 [0.0, 1.0])
+    }
 }

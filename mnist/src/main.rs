@@ -1,17 +1,18 @@
 use smolmatrix::*;
 use smolnn::*;
 
+use core::sync::atomic::*;
+
 // training params
 const BATCH_SIZE: usize = 25;
 
 // visualization params
-const BAR_LENGTH: usize = 24;
+static BAR_LENGTH: AtomicUsize = AtomicUsize::new(0);
 
 mod reader;
 
 fn main() {
-    // visualize_first_ten("train");
-    // visualize_first_ten("t10k");
+    BAR_LENGTH.store(term_size::dimensions().unwrap().0 - 11, Ordering::Relaxed);
 
     let (images, labels) = reader::read_data("t10k", Some(1000)).unwrap();
 
@@ -74,12 +75,12 @@ fn plot(a: f32, b: f32) {
 
 fn bar(v: &Vector<10>) {
     for (i, [v]) in v.inner.iter().enumerate() {
-        let len = ((v + 1.0).log2() * BAR_LENGTH as f32).floor() as usize;
+        let len = ((v + 1.0).log2() * BAR_LENGTH.load(Ordering::Relaxed) as f32).floor() as usize;
         println!(
             "{i} {:━<len$}{:<2$} ({3:.1}%)",
             "",
             "",
-            BAR_LENGTH - len,
+            BAR_LENGTH.load(Ordering::Relaxed) - len,
             v * 100.0
         );
     }

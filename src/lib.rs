@@ -1,5 +1,22 @@
 #![no_std]
 
+#![warn(
+    clippy::complexity,
+    clippy::correctness,
+    clippy::perf,
+    clippy::nursery,
+    clippy::suspicious,
+    clippy::style
+)]
+#![allow(
+    clippy::semicolon_inside_block,
+    clippy::just_underscores_and_digits,
+    unknown_lints,
+    cast_ref_to_mut,
+    invalid_reference_casting,
+    mutable_transmutes
+)]
+
 use optimizers::Optimizer;
 use smolmatrix::*;
 
