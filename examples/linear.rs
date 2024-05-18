@@ -6,9 +6,7 @@ const SAMPLES: isize = SAMPLES_SQRT * SAMPLES_SQRT;
 const TARGET_COST: f32 = 0.002;
 
 fn main() {
-    let rate = 0.4;
-
-    let l0 = Layer::new_randomized();
+    let l0 = Layer::new_zeroed();
 
     let mut expected = Vec::new();
     for x in (-SAMPLES_SQRT / 2)..SAMPLES_SQRT {
@@ -20,7 +18,7 @@ fn main() {
         }
     }
 
-    fn train_w_opt(l0: &Layer<2, 1>, expected: &[(Matrix<1, 1>, Matrix<1, 2>)], mut l0_opt: impl Optimizer<2, 1>) {
+    fn train_w_opt(l0: &Layer<2, 1>, expected: &[(Matrix<1, 1>, Matrix<1, 2>)], mut l0_opt: impl Optimizer<2, 1>) -> usize {
         let mut l0 = l0.clone();
 
         for i in 1.. {
@@ -46,17 +44,21 @@ fn main() {
             println!("{i:>5} {}", c / SAMPLES as f32);
 
             if !c.is_finite() || (c / SAMPLES as f32) < TARGET_COST {
-                break;
+                println!("{}", l0.weights);
+                println!("{}", l0.biases);
+
+                return i;
             }
         }
 
-        println!("{}", l0.weights);
-        println!("{}", l0.biases);
+        unreachable!()
     }
 
-    train_w_opt(&l0, &expected, optimizers::adam(rate, 0.9, 0.999));
-    train_w_opt(&l0, &expected, optimizers::sgd_momentum(rate, 0.9));
-    train_w_opt(&l0, &expected, optimizers::sgd(rate));
+    let adam = train_w_opt(&l0, &expected, optimizers::adam(5e-4, 0.9, 0.999));
+    let mont = train_w_opt(&l0, &expected, optimizers::sgd_momentum(0.4, 0.9));
+    let pure = train_w_opt(&l0, &expected, optimizers::sgd(0.4));
+
+    println!("Adam {adam}, Momentum {mont}, SGD {pure}");
 }
 
 fn f(x: f32, y: f32) -> Vector<1> {
