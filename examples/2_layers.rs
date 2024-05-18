@@ -5,8 +5,7 @@ const SAMPLES_SQRT: isize = 10;
 const SAMPLES: isize = SAMPLES_SQRT * SAMPLES_SQRT;
 
 fn main() {
-    let learn_rate = 1.0;
-    let rate = learn_rate / SAMPLES as f32 / SAMPLES as f32;
+    let learn_rate = 2e-4;
 
     let mut l0: Layer<2, 16> = Layer::new_randomized();
     let mut lf: Layer<16, 2> = Layer::new_randomized();
@@ -21,10 +20,8 @@ fn main() {
         }
     }
 
-    // let mut l0_opt = optimizers::sgd(rate);
-    // let mut lf_opt = optimizers::sgd(rate);
-    // let mut l0_opt = optimizers::sgd_momentum(rate, 0.9);
-    // let mut lf_opt = optimizers::sgd_momentum(rate, 0.9);
+    let mut l0_opt = optimizers::adam(learn_rate, 0.9, 0.999);
+    let mut lf_opt = optimizers::adam(learn_rate, 0.9, 0.999);
 
     for i in 1.. {
         let mut r = Vec::new();
@@ -35,6 +32,8 @@ fn main() {
         }
 
         let mut c = 0.0;
+        let mut bp0 = BackPropAcc::new();
+        let mut bpf = BackPropAcc::new();
         for ((r0, rf), (e, x)) in r.into_iter().zip(expected.iter()) {
             c += costs::mse(rf.clone(), e);
             let cost_der = costs::squared_error_derivative(rf.clone(), e);
@@ -42,9 +41,12 @@ fn main() {
             let actv_der_0 = activations::relu_derivative(r0.clone());
             let actv_der_f = activations::linear_derivative(rf);
 
-            // let cost_der = lf.back_prop(&r0, actv_der_f.clone(), &cost_der, &actv_der_0, &mut lf_opt);
-            // l0.back_prop(x, actv_der_0, &cost_der, &actv_der_f, &mut l0_opt);
+            let cost_der = lf.back_prop(&mut bpf, &r0, actv_der_f.clone(), &cost_der, &actv_der_0);
+            l0.back_prop(&mut bp0, x, actv_der_0, &cost_der, &actv_der_f);
         }
+
+        l0.apply(bp0, 1.0 / SAMPLES as f32, &mut l0_opt);
+        lf.apply(bpf, 1.0 / SAMPLES as f32, &mut lf_opt);
 
         println!("{i:>5} {}", c / SAMPLES as f32);
 
