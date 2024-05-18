@@ -31,7 +31,7 @@ pub struct Layer<const IN: usize, const OUT: usize> {
 }
 
 impl<const IN: usize, const OUT: usize> Layer<IN, OUT> {
-    pub fn new_zeroed() -> Self {
+    pub const fn new_zeroed() -> Self {
         Self {
             weights: Matrix::new_zeroed(),
             biases: Matrix::new_zeroed(),
@@ -65,7 +65,7 @@ impl<const IN: usize, const OUT: usize> Layer<IN, OUT> {
     }
 
     pub fn back_prop(
-        &mut self,
+        &self,
         back_prop: &mut BackPropAcc<IN, OUT>,
         i: &Vector<IN>,
         act_der: Vector<OUT>,
@@ -98,8 +98,14 @@ impl<const IN: usize, const OUT: usize> Layer<IN, OUT> {
 }
 
 pub struct BackPropAcc<const I: usize, const O: usize>(Layer<I, O>);
+impl<const I: usize, const O: usize> Default for BackPropAcc<I, O> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<const I: usize, const O: usize> BackPropAcc<I, O> {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self(Layer::new_zeroed())
     }
 }
