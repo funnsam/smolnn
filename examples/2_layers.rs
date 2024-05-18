@@ -1,5 +1,5 @@
-use smolnn::*;
 use smolmatrix::*;
+use smolnn::*;
 
 const SAMPLES_SQRT: isize = 10;
 const SAMPLES: isize = SAMPLES_SQRT * SAMPLES_SQRT;
@@ -21,7 +21,12 @@ fn main() {
         }
     }
 
-    loop {
+    // let mut l0_opt = optimizers::sgd(rate);
+    // let mut lf_opt = optimizers::sgd(rate);
+    // let mut l0_opt = optimizers::sgd_momentum(rate, 0.9);
+    // let mut lf_opt = optimizers::sgd_momentum(rate, 0.9);
+
+    for i in 1.. {
         let mut r = Vec::new();
         for (_, x) in expected.iter() {
             let r0 = activations::relu(l0.evaluate(x));
@@ -37,11 +42,11 @@ fn main() {
             let actv_der_0 = activations::relu_derivative(r0.clone());
             let actv_der_f = activations::linear_derivative(rf);
 
-            let cost_der = lf.back_prop(&r0, actv_der_f.clone(), &cost_der, &actv_der_0, rate);
-            l0.back_prop(x, actv_der_0, &cost_der, &actv_der_f, rate);
+            // let cost_der = lf.back_prop(&r0, actv_der_f.clone(), &cost_der, &actv_der_0, &mut lf_opt);
+            // l0.back_prop(x, actv_der_0, &cost_der, &actv_der_f, &mut l0_opt);
         }
 
-        println!("{}", c / SAMPLES as f32);
+        println!("{i:>5} {}", c / SAMPLES as f32);
 
         if !c.is_finite() || (c / SAMPLES as f32) < 0.2 {
             break;

@@ -5,7 +5,7 @@ pub fn linear<const S: usize>(v: Vector<S>) -> Vector<S> {
 }
 
 pub fn linear_derivative<const S: usize>(_v: Vector<S>) -> Vector<S> {
-    Vector { inner: [[1.0]; S], }
+    Vector { inner: [[1.0]; S] }
 }
 
 pub fn relu<const S: usize>(mut v: Vector<S>) -> Vector<S> {
@@ -19,6 +19,23 @@ pub fn relu<const S: usize>(mut v: Vector<S>) -> Vector<S> {
 pub fn relu_derivative<const S: usize>(mut v: Vector<S>) -> Vector<S> {
     for y in 0..S {
         v[(0, y)] = v[(0, y)].signum().max(0.0);
+    }
+
+    v
+}
+
+pub fn tanh<const S: usize>(mut v: Vector<S>) -> Vector<S> {
+    for y in 0..S {
+        v[(0, y)] = v[(0, y)].tanh();
+    }
+
+    v
+}
+
+pub fn tanh_derivative<const S: usize>(mut v: Vector<S>) -> Vector<S> {
+    for y in 0..S {
+        let tanh = v[(0, y)].tanh();
+        v[(0, y)] = 1.0 - tanh * tanh;
     }
 
     v

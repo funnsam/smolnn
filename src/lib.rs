@@ -1,10 +1,13 @@
 #![no_std]
 
+use optimizers::Optimizer;
 use smolmatrix::*;
 
 pub mod activations;
 pub mod costs;
+pub mod optimizers;
 
+#[derive(Clone)]
 pub struct Layer<const IN: usize, const OUT: usize> {
     pub weights: Matrix<IN, OUT>,
     pub biases: Vector<OUT>,
@@ -12,23 +15,30 @@ pub struct Layer<const IN: usize, const OUT: usize> {
 
 impl<const IN: usize, const OUT: usize> Layer<IN, OUT> {
     pub fn new_zeroed() -> Self {
-        Self { weights: Matrix::new_zeroed(), biases: Matrix::new_zeroed() }
+        Self {
+            weights: Matrix::new_zeroed(),
+            biases: Matrix::new_zeroed(),
+        }
     }
 
     #[cfg(feature = "alea")]
     pub fn new_randomized() -> Self {
+        Self::new_each_as(|| alea::f32() - 0.5)
+    }
+
+    pub fn new_each_as<F: Fn() -> f32>(f: F) -> Self {
         let mut s = Self::new_zeroed();
 
-        fn r<const W: usize, const H: usize>(m: &mut Matrix<W, H>) {
+        fn r<F: Fn() -> f32, const W: usize, const H: usize>(m: &mut Matrix<W, H>, f: &F) {
             for i in m.inner.iter_mut() {
                 for j in i.iter_mut() {
-                    *j = alea::f32();
+                    *j = f();
                 }
             }
         }
 
-        r(&mut s.weights);
-        r(&mut s.biases);
+        r(&mut s.weights, &f);
+        r(&mut s.biases, &f);
 
         s
     }
@@ -37,19 +47,42 @@ impl<const IN: usize, const OUT: usize> Layer<IN, OUT> {
         &self.weights * i + &self.biases
     }
 
-    pub fn back_prop(&mut self, i: &Vector<IN>, act_der: Vector<OUT>, cost_der: &Vector<OUT>, prev_act_der: &Vector<IN>, rate: f32) -> Vector<IN> {
-    // pub fn back_prop(&mut self, i: &Vector<IN>, act_der: Vector<OUT>, cost_der: f32, rate: f32) {
+    pub fn back_prop(
+        &mut self,
+        back_prop: &mut BackPropAcc<IN, OUT>,
+        i: &Vector<IN>,
+        act_der: Vector<OUT>,
+        cost_der: &Vector<OUT>,
+        prev_act_der: &Vector<IN>,
+    ) -> Vector<IN> {
         let dc_db = act_der.clone() * cost_der;
         let dc_dw = (&dc_db) * &i.transpose();
 
-        self.biases = self.biases.clone() - &(dc_db * rate);
-        self.weights = self.weights.clone() - &(dc_dw * rate);
+        back_prop.0.biases = back_prop.0.biases.clone() + &dc_db;
+        back_prop.0.weights = back_prop.0.weights.clone() + &dc_dw;
 
         // LIGHT:
-        //   p
-        // ( Σ  c'σ' w_i^1) σ' i_0
-        //  i=1
-        //
+        // ┌  p             ┐
+        // │  Σ  c'σ' w_i^1 │ σ' i_0
+        // └ i=1            ┘
+
         (&(act_der * cost_der).transpose() * &self.weights).transpose() * prev_act_der * i
+    }
+
+    pub fn apply<Opt: Optimizer<IN, OUT>>(
+        &mut self,
+        bp: BackPropAcc<IN, OUT>,
+        sf: f32,
+        opt: &mut Opt,
+    ) {
+        self.biases = opt.update_biases(self.biases.clone(), bp.0.biases * sf);
+        self.weights = opt.update_weights(self.weights.clone(), bp.0.weights * sf);
+    }
+}
+
+pub struct BackPropAcc<const I: usize, const O: usize>(Layer<I, O>);
+impl<const I: usize, const O: usize> BackPropAcc<I, O> {
+    pub fn new() -> Self {
+        Self(Layer::new_zeroed())
     }
 }
