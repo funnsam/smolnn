@@ -24,19 +24,19 @@ pub fn tanh_derivative<const S: usize>(v: Vector<S>) -> Vector<S> {
     v.map_each(|v| *v = 1.0 - v.tanh().powi(2))
 }
 
+pub fn stable_softmax<const S: usize>(mut v: Vector<S>) -> Vector<S> {
+    let max = v.inner.iter().flatten().max_by(|a, b| a.partial_cmp(b).unwrap_or(core::cmp::Ordering::Equal)).unwrap();
+    v -= *max;
+    softmax(v)
+}
+
+pub fn stable_softmax_derivative<const S: usize>(v: Vector<S>, t: &Vector<S>) -> Vector<S> {
+    stable_softmax(v) - t
+}
+
 pub fn softmax<const S: usize>(mut v: Vector<S>) -> Vector<S> {
-    let mut sum = 0.0;
-
-    for y in 0..S {
-        let yv = v[(0, y)].exp();
-        sum += yv;
-        v[(0, y)] = yv;
-    }
-
-    for y in 0..S {
-        v[(0, y)] /= sum;
-    }
-
+    v.map_each_in_place(|i| *i = i.exp());
+    v /= v.inner.iter().flatten().sum::<f32>();
     v
 }
 
@@ -44,6 +44,7 @@ pub fn softmax_derivative<const S: usize>(v: Vector<S>, t: &Vector<S>) -> Vector
     softmax(v) - t
 }
 
-pub fn softmax_cost<const S: usize>() -> Vector<S> { // HACK: wacky simple solution
-    Vector { inner: [[1.0]; S] }
+pub fn softmax_cost<const S: usize>(v: Vector<S>, t: &mut Vector<S>) -> Vector<S> {
+    t.map_each_in_place(|i| *i = (*i + 1e-15).ln());
+    -(v * &*t)
 }

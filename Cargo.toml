@@ -8,8 +8,10 @@ edition = "2021"
 
 [dependencies]
 alea = { version = "0.2.2", optional = true }
-smolmatrix = "0.1.5"
+# smolmatrix = "0.1.6"
+smolmatrix = { path = "../smolmatrix" }
 
 [features]
-default = ["alea"]
+default = ["alea", "alloc"]
 alea = ["dep:alea"]
+alloc = []

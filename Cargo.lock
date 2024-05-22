@@ -26,9 +26,7 @@ dependencies = [
 
 [[package]]
 name = "smolmatrix"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49a5446102fe646e091960215c978e82cb68870e9bbda0742290982d71b7f32b"
+version = "0.1.6"
 
 [[package]]
 name = "smolnn"

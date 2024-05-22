@@ -3,10 +3,10 @@ use smolnn::*;
 
 const IN: usize = 784;
 const L0: usize = 256;
-const L1: usize = 256;
+const L1: usize = 64;
 const OUT: usize = 10;
 
-const LEARNING_RATE: f32 = 3e-4;
+const LEARNING_RATE: f32 = 0.001;
 
 pub struct Model {
     l0: Box<Layer<IN, L0>>,
@@ -34,52 +34,56 @@ impl Model {
     pub fn evaluate(&self, i: &Vector<IN>) -> Vector<OUT> {
         let l0 = activations::tanh(self.l0.evaluate(i));
         let l1 = activations::tanh(self.l1.evaluate(&l0));
-        let l2 = activations::tanh(self.l2.evaluate(&l1));
+        let l2 = activations::stable_softmax(self.l2.evaluate(&l1));
 
         l2
     }
 
     pub fn feed(&self, epoch: &mut Epoch, i: &Vector<IN>, t: u8) {
-        let t = one_at(t);
+        let mut t = one_at(t);
 
-        let l0 = activations::tanh(self.l0.evaluate(i));
-        let l1 = activations::tanh(self.l1.evaluate(&l0));
-        let l2 = activations::tanh(self.l2.evaluate(&l1));
-        epoch.c += costs::mse(l2.clone(), &t);
+        let z0 = self.l0.evaluate(i);
+        let a0 = activations::tanh(z0.clone());
+        let z1 = self.l1.evaluate(&a0);
+        let a1 = activations::tanh(z1.clone());
+        let z2 = self.l2.evaluate(&a1);
+        let _a2 = activations::stable_softmax(z2.clone());
 
-        let cost_der = activations::softmax_cost();
+        let actv_der_0 = activations::tanh_derivative(z0.clone());
+        let actv_der_1 = activations::tanh_derivative(z1.clone());
+        let actv_der_2 = activations::stable_softmax_derivative(z2.clone(), &t);
 
-        let actv_der_0 = activations::tanh_derivative(l0.clone());
-        let actv_der_1 = activations::tanh_derivative(l1.clone());
-        let actv_der_2 = activations::softmax_derivative(l2.clone(), &t);
+        let cost_der = activations::softmax_cost(z2.clone(), &mut t);
+        epoch.c += cost_der.inner.iter().flatten().copied().sum::<f32>();
+        drop(t);
 
-        let cost_der = self.l2.back_prop(&mut epoch.l2, &l1, actv_der_2.clone(), &cost_der, &actv_der_1);
-        let cost_der = self.l1.back_prop(&mut epoch.l1, &l0, actv_der_1.clone(), &cost_der, &actv_der_0);
+        let cost_der = self.l2.back_prop(&mut epoch.l2, &a1, actv_der_2.clone(), &cost_der, &actv_der_1);
+        let cost_der = self.l1.back_prop(&mut epoch.l1, &a0, actv_der_1.clone(), &cost_der, &actv_der_0);
         self.l0.back_prop(&mut epoch.l0, i, actv_der_0.clone(), &cost_der, &Vector::new_zeroed());
     }
 
-    pub fn apply(&mut self, epoch: Epoch) -> f32 {
-        self.l0.apply(epoch.l0, 1.0 / crate::BATCH_SIZE as f32, &mut self.l0_opt);
-        self.l1.apply(epoch.l1, 1.0 / crate::BATCH_SIZE as f32, &mut self.l1_opt);
-        self.l2.apply(epoch.l2, 1.0 / crate::BATCH_SIZE as f32, &mut self.l2_opt);
+    pub fn apply(&mut self, mut epoch: Epoch) -> f32 {
+        self.l0.apply_in_place(&mut epoch.l0, 1.0 / crate::BATCH_SIZE as f32, &mut self.l0_opt);
+        self.l1.apply_in_place(&mut epoch.l1, 1.0 / crate::BATCH_SIZE as f32, &mut self.l1_opt);
+        self.l2.apply_in_place(&mut epoch.l2, 1.0 / crate::BATCH_SIZE as f32, &mut self.l2_opt);
 
         epoch.c / crate::BATCH_SIZE as f32
     }
 }
 
 pub struct Epoch {
-    l0: BackPropAcc<IN, L0>,
-    l1: BackPropAcc<L0, L1>,
-    l2: BackPropAcc<L1, OUT>,
+    l0: Box<BackPropAcc<IN, L0>>,
+    l1: Box<BackPropAcc<L0, L1>>,
+    l2: Box<BackPropAcc<L1, OUT>>,
     c: f32,
 }
 
 impl Epoch {
     pub fn new() -> Self {
         Self {
-            l0: BackPropAcc::new(),
-            l1: BackPropAcc::new(),
-            l2: BackPropAcc::new(),
+            l0: Box::new(BackPropAcc::new()),
+            l1: Box::new(BackPropAcc::new()),
+            l2: Box::new(BackPropAcc::new()),
             c: 0.0,
         }
     }

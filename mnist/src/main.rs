@@ -5,7 +5,7 @@ use core::sync::atomic::*;
 mod model;
 
 // training params
-const BATCH_SIZE: usize = 25;
+const BATCH_SIZE: usize = 16;
 
 // visualization params
 static BAR_LENGTH: AtomicUsize = AtomicUsize::new(0);
@@ -15,14 +15,14 @@ mod reader;
 fn main() {
     BAR_LENGTH.store(term_size::dimensions().unwrap().0 - 11, Ordering::Relaxed);
 
-    let (images, labels) = reader::read_data("t10k", None).unwrap();
+    let (images, labels) = reader::read_data("train", None).unwrap();
     let mut model = model::Model::new();
 
-    for i in 1..=25 {
+    for i in 1..=100 {
         let mut epoch = model::Epoch::new();
 
-        for _ in 0..BATCH_SIZE {
-            let id = alea::u64_in_range(0, images.len() as u64) as usize;
+        for id in 0..BATCH_SIZE {
+            let id = alea::u64_in_range(0, images.len() as u64 - 1) as usize;
             model.feed(&mut epoch, &images[id], labels[id]);
         }
 

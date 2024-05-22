@@ -17,6 +17,7 @@
     mutable_transmutes
 )]
 
+#[cfg(feature = "alloc")]
 extern crate alloc;
 
 use optimizers::Optimizer;
@@ -26,7 +27,7 @@ pub mod activations;
 pub mod costs;
 pub mod optimizers;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Layer<const IN: usize, const OUT: usize> {
     pub weights: Matrix<IN, OUT>,
     pub biases: Vector<OUT>,
@@ -94,11 +95,24 @@ impl<const IN: usize, const OUT: usize> Layer<IN, OUT> {
         sf: f32,
         opt: &mut Opt,
     ) {
-        self.biases = opt.update_biases(self.biases.clone(), bp.0.biases * sf);
-        self.weights = opt.update_weights(self.weights.clone(), bp.0.weights * sf);
+        opt.update_biases(&mut self.biases, &mut (bp.0.biases * sf));
+        opt.update_weights(&mut self.weights, &mut (bp.0.weights * sf));
+    }
+
+    pub fn apply_in_place<Opt: Optimizer<IN, OUT>>(
+        &mut self,
+        bp: &mut BackPropAcc<IN, OUT>,
+        sf: f32,
+        opt: &mut Opt,
+    ) {
+        bp.0.biases *= sf;
+        opt.update_biases(&mut self.biases, &mut bp.0.biases);
+        bp.0.weights *= sf;
+        opt.update_weights(&mut self.weights, &mut bp.0.weights);
     }
 }
 
+#[derive(Debug)]
 pub struct BackPropAcc<const I: usize, const O: usize>(Layer<I, O>);
 impl<const I: usize, const O: usize> Default for BackPropAcc<I, O> {
     fn default() -> Self {

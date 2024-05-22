@@ -39,7 +39,8 @@ fn main() {
                 l0.back_prop(&mut bp0, x, actv_der_0, &cost_der, &Vector::new_zeroed());
             }
 
-            l0.apply(bp0, 1.0 / SAMPLES as f32, &mut l0_opt);
+            // l0.apply(bp0, 1.0 / SAMPLES as f32, &mut l0_opt);
+            l0.apply_in_place(&mut bp0, 1.0 / SAMPLES as f32, &mut l0_opt);
 
             println!("{i:>5} {}", c / SAMPLES as f32);
 
@@ -54,7 +55,7 @@ fn main() {
         unreachable!()
     }
 
-    let adam = train_w_opt(&l0, &expected, optimizers::adam(5e-4, 0.9, 0.999));
+    let adam = train_w_opt(&l0, &expected, optimizers::adam(0.4, 0.9, 0.999));
     let mont = train_w_opt(&l0, &expected, optimizers::sgd_momentum(0.4, 0.9));
     let pure = train_w_opt(&l0, &expected, optimizers::sgd(0.4));
 
